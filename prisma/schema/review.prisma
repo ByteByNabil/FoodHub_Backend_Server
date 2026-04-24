@@ -1,0 +1,17 @@
+model Review {
+    id String @id @default(uuid())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade) // 🔥 added onDelete: Cascade to automatically delete reviews when a user is deleted
+
+    mealId String
+    meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade) // 🔥 added onDelete: Cascade to automatically delete reviews when a meal is deleted
+
+    rating  Int
+    comment String?
+
+    createdAt DateTime @default(now())
+
+    @@index([mealId])
+    @@index([userId])
+}

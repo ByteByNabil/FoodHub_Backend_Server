@@ -1,0 +1,50 @@
+model Order {
+    id String @id @default(uuid())
+
+    customerId String
+    customer   User   @relation(fields: [customerId], references: [id], onDelete: Restrict) // 🔥 added onDelete for better data integrity
+
+    providerId String
+    provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Restrict) // 🔥 added onDelete for better data integrity
+
+    totalPrice Float
+    status     OrderStatus @default(PLACED)
+    address    String
+
+    paymentStatus PaymentStatus @default(PENDING) // 🔥 added paymentStatus for better tracking of payment state
+    isLocked      Boolean       @default(false) // 🔥 added isLocked to prevent changes to orders that are being processed
+
+    items   OrderItem[]
+    payment Payment? // 🔥 added relation to Payment for easier access to payment details
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt // 🔥 added updatedAt for tracking changes to orders
+
+    @@index([customerId])
+    @@index([providerId])
+    @@index([status]) // 🔥 added index on status for better query performance when filtering by order status
+}
+
+model OrderItem {
+    id String @id @default(uuid())
+
+    orderId String
+    order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade) // 🔥 added onDelete: Cascade to automatically delete order items when an order is deleted
+
+    mealId String
+    meal   Meal   @relation(fields: [mealId], references: [id], onDelete: Restrict) // 🔥 added onDelete: Restrict to prevent deletion of meals that are part of existing orders
+
+    quantity Int
+    price    Float
+
+    @@index([orderId]) // 🔥 added index on orderId for better query performance when fetching items for an order
+    @@index([mealId]) // 🔥 added index on mealId for better query performance when fetching orders that include a specific meal
+}
+
+enum OrderStatus {
+    PLACED
+    PREPARING
+    READY
+    DELIVERED
+    CANCELLED
+}

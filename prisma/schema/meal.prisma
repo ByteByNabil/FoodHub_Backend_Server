@@ -1,0 +1,27 @@
+model Meal {
+    id String @id @default(uuid())
+
+    title       String
+    price       Float
+    description String?
+    image       String?
+
+    categoryId String
+    category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict) // 🔥 added onDelete
+
+    providerId String
+    provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade) // 🔥 added onDelete
+
+    isAvailable Boolean @default(true)
+    isDeleted   Boolean @default(false) // 🔥 added isDeleted for soft delete
+
+    reviews    Review[]
+    orderItems OrderItem[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt // 🔥 added updatedAt for tracking changes
+
+    @@index([categoryId])
+    @@index([providerId])
+    @@index([price]) // 🔥 added index on price for better query performance
+}

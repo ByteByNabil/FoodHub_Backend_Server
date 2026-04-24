@@ -1,0 +1,36 @@
+model Payment {
+    id String @id @default(uuid())
+
+    orderId String @unique
+    order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade) // 🔥 added onDelete: Cascade to automatically delete payment when an order is deleted
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Restrict) // 🔥 added onDelete: Restrict to prevent deletion of users that have made payments
+
+    provider String // stripe
+
+    amount   Float
+    currency String @default("usd")
+
+    status PaymentStatus @default(PENDING)
+
+    stripeSessionId       String? @unique
+    stripePaymentIntentId String? @unique
+
+    idempotencyKey String? @unique
+
+    failureReason String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([status])
+}
+
+enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
+    REFUNDED
+}

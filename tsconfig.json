@@ -2,14 +2,14 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    "rootDir": ".",
+    "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "target": "ES2023",
-    "types": [],
+    "target": "ES2022",
+    "lib": ["ES2022"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -38,6 +38,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "generated/prisma"]
+  "include": ["src/**/*", "api/**/*", "generated/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

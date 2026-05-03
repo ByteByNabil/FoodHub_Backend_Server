@@ -1,16 +1,19 @@
+import { prisma } from "../../lib/prisma";
+
 // Uses Google Gemini API via native fetch — no npm package required!
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-const SYSTEM_PROMPT = `
+const BASE_SYSTEM_PROMPT = `
 You are "Foodie", the official AI culinary assistant for FoodHub.
 Your goal is to help users discover meals, provide personalized recommendations, and answer questions related to food, ingredients, and the FoodHub platform.
 
 Keep your answers concise, friendly, and engaging.
 Use Markdown to format your responses (e.g., bolding meal names, using bullet points).
 
-If a user asks for recommendations, you can invent realistic-sounding meals (e.g., "Spicy Garlic Ramen", "Vegan Avocado Burger") or refer to general categories like Pizza, Sushi, Burgers.
-Do not hallucinate features that a food delivery app wouldn't have.
+CRITICAL RULE:
+You MUST ONLY recommend meals, categories, and restaurants that are explicitly provided in the DATABASE CONTEXT below.
+DO NOT invent, hallucinate, or recommend external meals or restaurants that are not in the context. If a user asks for something not in the context, politely inform them that it's not currently available on FoodHub and suggest something from the available options.
 `;
 
 type ChatMessage = { role: string; content: string };
@@ -24,16 +27,32 @@ export const getChatCompletion = async (messages: ChatMessage[]): Promise<string
     );
   }
 
+  // Fetch meals and providers from the database
+  const availableMeals = await prisma.meal.findMany({
+    where: { isAvailable: true, isDeleted: false },
+    include: {
+      category: true,
+      provider: true,
+    },
+  });
+
+  // Format the database context into a string
+  const mealsContext = availableMeals.map(meal => {
+    return `- ${meal.title} ($${meal.price}) at ${meal.provider.restaurantName} [Category: ${meal.category.name}]`;
+  }).join("\n");
+
+  const fullSystemPrompt = `${BASE_SYSTEM_PROMPT}\n\n--- DATABASE CONTEXT ---\nAVAILABLE MEALS:\n${mealsContext || "No meals currently available."}\n------------------------`;
+
   // Convert our message format to Gemini's "contents" format
   const contents = [
     // Inject system prompt as the first user turn
     {
       role: "user",
-      parts: [{ text: SYSTEM_PROMPT }],
+      parts: [{ text: fullSystemPrompt }],
     },
     {
       role: "model",
-      parts: [{ text: "Understood! I'm Foodie, ready to help." }],
+      parts: [{ text: "Understood! I will strictly use only the provided database context to recommend meals and restaurants." }],
     },
     // Append actual conversation history
     ...messages.map((m) => ({
@@ -48,8 +67,8 @@ export const getChatCompletion = async (messages: ChatMessage[]): Promise<string
     body: JSON.stringify({
       contents,
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 300,
+        temperature: 0.2, // Lower temperature to prevent hallucination
+        maxOutputTokens: 400,
       },
     }),
   });

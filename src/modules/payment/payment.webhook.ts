@@ -1,18 +1,24 @@
 // src/modules/payment/payment.webhook.ts
 
 import { Request, Response } from "express";
-import { stripe } from "../../lib/stripe";
+import { getStripe } from "../../lib/stripe";
 import { prisma } from "../../lib/prisma";
-import Stripe from "stripe";
 import {
     handlePaymentSuccess,
     handlePaymentFailure,
 } from "./payment.domain";
 
+type StripeClient = ReturnType<typeof getStripe>;
+type StripeEvent = ReturnType<StripeClient["webhooks"]["constructEvent"]>;
+type StripeCheckoutSession = Awaited<
+    ReturnType<StripeClient["checkout"]["sessions"]["create"]>
+>;
+
 export const stripeWebhook = async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
+    const stripe = getStripe();
 
-    let event: Stripe.Event;
+    let event: StripeEvent;
 
     try {
         event = stripe.webhooks.constructEvent(
@@ -32,7 +38,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
         // PAYMENT SUCCESS
         // =========================
         if (event.type === "checkout.session.completed") {
-            const session = event.data.object as Stripe.Checkout.Session;
+            const session = event.data.object as StripeCheckoutSession;
 
             const orderId = session.metadata?.orderId;
             const idempotencyKey = session.metadata?.idempotencyKey;
@@ -86,7 +92,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
         // PAYMENT FAILED
         // =========================
         if (event.type === "checkout.session.expired") {
-            const session = event.data.object as Stripe.Checkout.Session;
+            const session = event.data.object as StripeCheckoutSession;
 
             const orderId = session.metadata?.orderId;
 

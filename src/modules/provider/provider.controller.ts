@@ -24,12 +24,12 @@ const createProvider = async (req: Request, res: Response, next: NextFunction) =
 
 const getAllProviders = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const result = await ProviderService.getAllProviders();
+        const result = await ProviderService.getAllProviders(req.query);
 
         res.status(200).json({
             success: true,
             message: "Providers fetched",
-            data: result,
+            ...result,
         });
     } catch (error) {
         next(error);

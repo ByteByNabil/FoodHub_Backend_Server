@@ -1,5 +1,3 @@
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import nodemailer from "nodemailer";
 
@@ -13,45 +11,81 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "postgresql", // or "mysql", "postgresql", ...etc
-  }),
-  trustedOrigins: [process.env.APP_URL!],
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        defaultValue: "CUSTOMER",
-        required: false
+let cachedAuth: any = null;
+
+// Hack to make Vercel's bundler trace and include the ESM packages
+if (false) {
+  import("better-auth");
+  import("better-auth/adapters/prisma");
+}
+
+const loadBetterAuth = () =>
+  new Function('return import("better-auth")')() as Promise<typeof import("better-auth")>;
+
+const loadPrismaAdapter = () =>
+  new Function('return import("better-auth/adapters/prisma")')() as Promise<
+    typeof import("better-auth/adapters/prisma")
+  >;
+
+export const getAuth = async () => {
+  if (cachedAuth) return cachedAuth;
+
+  const [{ betterAuth }, { prismaAdapter }] = await Promise.all([
+    loadBetterAuth(),
+    loadPrismaAdapter(),
+  ]);
+
+  cachedAuth = betterAuth({
+    database: prismaAdapter(prisma, {
+      provider: "postgresql",
+    }),
+    trustedOrigins: [process.env.APP_URL!],
+    advanced: {
+      defaultCookieAttributes: {
+        sameSite: "none",
+        secure: true,
       },
-      phone: {
-        type: "string",
-        required: false
+    },
+    user: {
+      additionalFields: {
+        role: {
+          type: "string",
+          defaultValue: "CUSTOMER",
+          required: false,
+        },
+        phone: {
+          type: "string",
+          required: false,
+        },
+        status: {
+          type: "string",
+          defaultValue: "ACTIVE",
+          required: false,
+        },
       },
-      status: {
-        type: "string",
-        defaultValue: "ACTIVE",
-        required: false
-      }
-    }
-  },
-  emailAndPassword: {
-    enabled: true,
-    autoSignIn: false,
-    requireEmailVerification: true
-  },
-  emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url, token }, request) => {
-      try {
-        const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
-        const info = await transporter.sendMail({
-          from: '"FoodHub" <FoodHub@ph.com>',
-          to: user.email,
-          subject: "Please verify your email!",
-          html: `<!DOCTYPE html>
+    },
+    emailAndPassword: {
+      enabled: true,
+      autoSignIn: false,
+      requireEmailVerification: true,
+    },
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID || "",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url, token }, request) => {
+        try {
+          const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
+          const info = await transporter.sendMail({
+            from: `"FoodHub" <${process.env.EMAIL_FROM || "FoodHub@ph.com"}>`,
+            to: user.email,
+            subject: "Please verify your email!",
+            html: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -181,18 +215,19 @@ export const auth = betterAuth({
 </body>
 </html>
 `
-        });
+          });
 
-        console.log("Message sent:", info.messageId);
-      } catch (err) {
-        console.error(err)
-        throw err;
-      }
+          console.log("Message sent:", info.messageId);
+        } catch (err) {
+          console.error(err);
+          throw err;
+        }
+      },
     },
-  },
+  });
 
-
-});
+  return cachedAuth;
+};
 
 
 //

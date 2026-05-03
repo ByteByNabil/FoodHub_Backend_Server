@@ -1,6 +1,6 @@
 // src/middlewares/auth.ts
 import { NextFunction, Request, Response } from "express";
-import { auth as betterAuth } from '../lib/auth'
+import { getAuth } from "../lib/auth";
 
 export enum UserRole {
     CUSTOMER = "CUSTOMER",
@@ -25,6 +25,8 @@ declare global {
 const auth = (...roles: UserRole[]) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const betterAuth = await getAuth();
+
             // get user session
             const session = await betterAuth.api.getSession({
                 headers: req.headers as any
@@ -47,10 +49,9 @@ const auth = (...roles: UserRole[]) => {
             if (!session.user.emailVerified) {
                 return res.status(403).json({
                     success: false,
-                    message: "Email verification required. Please verfiy your email!"
+                    message: "Email verification required. Please verify your email!"
                 })
             }
-
 
             req.user = {
                 id: session.user.id,
@@ -63,7 +64,7 @@ const auth = (...roles: UserRole[]) => {
             if (roles.length && !roles.includes(req.user.role as UserRole)) {
                 return res.status(403).json({
                     success: false,
-                    message: "Forbidden! You don't have permission to access this resources!"
+                    message: "Forbidden! You don't have permission to access this resource!"
                 })
             }
 

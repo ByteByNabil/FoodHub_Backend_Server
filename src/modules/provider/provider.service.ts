@@ -25,8 +25,13 @@ const createProviderProfile = async (
     });
 };
 
-const getAllProviders = async () => {
-    return await prisma.providerProfile.findMany({
+const getAllProviders = async (query: any = {}) => {
+    const { page = 1, limit = 10 } = query;
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const data = await prisma.providerProfile.findMany({
         where: { isApproved: true },
         include: {
             user: {
@@ -34,7 +39,23 @@ const getAllProviders = async () => {
             },
         },
         orderBy: { createdAt: "desc" },
+        skip,
+        take: limitNumber,
     });
+
+    const total = await prisma.providerProfile.count({
+        where: { isApproved: true },
+    });
+
+    return {
+        data,
+        meta: {
+            page: pageNumber,
+            limit: limitNumber,
+            total,
+            totalPage: Math.ceil(total / limitNumber),
+        },
+    };
 };
 
 const getProviderById = async (id: string) => {

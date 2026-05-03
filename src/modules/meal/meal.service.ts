@@ -27,6 +27,8 @@ const getAllMeals = async (query: any) => {
         categoryId,
         minPrice,
         maxPrice,
+        sortBy = "createdAt",
+        sortOrder = "desc",
         page = 1,
         limit = 10,
     } = query;
@@ -69,6 +71,14 @@ const getAllMeals = async (query: any) => {
     //  only available meals
     conditions.push({ isAvailable: true });
 
+    // sort logic
+    let orderBy: any = { createdAt: "desc" };
+    if (sortBy === "price") {
+        orderBy = { price: sortOrder === "asc" ? "asc" : "desc" };
+    } else if (sortBy === "title") {
+        orderBy = { title: sortOrder === "asc" ? "asc" : "desc" };
+    }
+
     const data = await prisma.meal.findMany({
         where: { AND: conditions },
         include: {
@@ -81,7 +91,7 @@ const getAllMeals = async (query: any) => {
         },
         skip,
         take: Number(limit),
-        orderBy: { createdAt: "desc" },
+        orderBy,
     });
 
     const total = await prisma.meal.count({

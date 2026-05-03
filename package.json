@@ -1,25 +1,30 @@
 {
-  "name": "FoodHub_Backend_Server",
+  "name": "food-hub-backend-server",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx tsx watch src/server.ts",
-    "seed:admin": "npx tsx src/scripts/seedAdmin.ts",
-    "stripe:webhook": "stripe listen --forward-to localhost:5000/api/payments/webhook"
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/src/server.js",
+    "seed:admin": "tsx src/scripts/seedAdmin.ts",
+    "stripe:webhook": "stripe listen --forward-to localhost:5000/api/payments/webhook",
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@10.33.2",
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.20.0",
+    "install": "^0.13.0",
     "prisma": "^7.7.0",
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   },
@@ -30,7 +35,6 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "install": "^0.13.0",
     "nodemailer": "^8.0.5",
     "pg": "^8.20.0",
     "stripe": "^22.0.2",

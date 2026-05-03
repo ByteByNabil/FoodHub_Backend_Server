@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma";
-import { stripe } from "../../lib/stripe";
+import { getStripe } from "../../lib/stripe";
 import crypto from "crypto";
 
 const getCheckoutBaseUrl = () => {
@@ -22,6 +22,7 @@ const getCheckoutBaseUrl = () => {
 
 export const createCheckoutSession = async (orderId: string, userId: string) => {
     const checkoutBaseUrl = getCheckoutBaseUrl();
+    const stripe = getStripe();
 
     const order = await prisma.order.findUniqueOrThrow({
         where: { id: orderId },

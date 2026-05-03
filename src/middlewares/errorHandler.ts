@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express"
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client.js";
 
 const serializeError = (err: unknown) => {
     if (err instanceof Error) {
@@ -26,7 +26,7 @@ function errorHandler(
     // PrismaClientValidationError
     if (err instanceof Prisma.PrismaClientValidationError) {
         statusCode = 400;
-        errorMessage = "You provide incorrect field type or missing fields!"
+        errorMessage = "You provided an incorrect field type or missing fields!"
     }
     // PrismaClientKnownRequestError
     else if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -50,7 +50,7 @@ function errorHandler(
     else if (err instanceof Prisma.PrismaClientInitializationError) {
         if (err.errorCode === "P1000") {
             statusCode = 401;
-            errorMessage = "Authentication failed. Please check your creditials!"
+            errorMessage = "Authentication failed. Please check your credentials!"
         }
         else if (err.errorCode === "P1001") {
             statusCode = 400;

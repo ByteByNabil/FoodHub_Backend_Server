@@ -39,11 +39,15 @@ export const getAuth = async () => {
     database: prismaAdapter(prisma, {
       provider: "postgresql",
     }),
-    trustedOrigins: [process.env.APP_URL!],
+    trustedOrigins: [
+      process.env.APP_URL!,
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ],
     advanced: {
       defaultCookieAttributes: {
-        sameSite: "none",
-        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: process.env.NODE_ENV === "production",
       },
     },
     user: {

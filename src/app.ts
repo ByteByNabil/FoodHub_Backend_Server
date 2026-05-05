@@ -43,7 +43,31 @@ app.post(
     express.raw({ type: "application/json" }),
     stripeWebhook
 );
-app.use(cors({ origin: process.env.APP_URL, credentials: true }))
+const ALLOWED_ORIGINS = new Set([
+    // Production domains — always allowed
+    "https://food-hub-frontend-website.vercel.app",
+    "https://food-hub-backend-server.vercel.app",
+    // Local development
+    "http://localhost:3000",
+    "http://localhost:5000",
+    // Also include env vars in case of custom domains
+    process.env.APP_URL,
+    process.env.BETTER_AUTH_URL,
+    process.env.CLIENT_URL,
+].filter(Boolean) as string[]);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow server-to-server requests (no origin) and known origins
+        if (!origin || ALLOWED_ORIGINS.has(origin)) {
+            callback(null, true);
+        } else {
+            console.warn(`CORS blocked: ${origin}`);
+            callback(null, false);
+        }
+    },
+    credentials: true,
+}))
 app.use(express.json())
 
 app.all("/api/auth/*splat", async (req: Request, res: Response) => {
